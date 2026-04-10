@@ -1,26 +1,77 @@
 @import "tailwindcss";
 
 :root {
-  --background: #ffffff;
-  --foreground: #171717;
+  --background: #030712;
+  --foreground: #e2e8f0;
 }
 
 @theme inline {
   --color-background: var(--background);
   --color-foreground: var(--foreground);
-  --font-sans: var(--font-geist-sans);
-  --font-mono: var(--font-geist-mono);
+  --font-sans: var(--font-inter);
+  --font-heading: var(--font-sora);
 }
 
 @media (prefers-color-scheme: dark) {
   :root {
-    --background: #0a0a0a;
-    --foreground: #ededed;
+    --background: #020617;
+    --foreground: #e2e8f0;
   }
 }
 
 body {
   background: var(--background);
   color: var(--foreground);
-  font-family: Arial, Helvetica, sans-serif;
+  font-family: var(--font-inter), Arial, Helvetica, sans-serif;
+}
+
+html {
+  scroll-behavior: smooth;
+}
+
+* {
+  border-color: rgb(148 163 184 / 0.2);
+}
+
+h1,
+h2,
+h3 {
+  font-family: var(--font-sora), var(--font-inter), Arial, Helvetica, sans-serif;
+}
+
+.noise-mask {
+  background-image: radial-gradient(rgba(255, 255, 255, 0.06) 0.5px, transparent 0.5px);
+  background-size: 3px 3px;
+  opacity: 0.25;
+}
+
+.aurora-bg {
+  animation: auroraShift 12s ease-in-out infinite alternate;
+}
+
+.marquee-track {
+  animation: marqueeSlide 22s linear infinite;
+}
+
+/* Hero footer rail: slower + calmer so it doesn’t compete with the 3D scene */
+.marquee-track-slow {
+  animation: marqueeSlide 48s linear infinite;
+}
+
+@keyframes marqueeSlide {
+  from {
+    transform: translateX(0);
+  }
+  to {
+    transform: translateX(-50%);
+  }
+}
+
+@keyframes auroraShift {
+  0% {
+    filter: hue-rotate(0deg) saturate(100%);
+  }
+  100% {
+    filter: hue-rotate(24deg) saturate(132%);
+  }
 }
