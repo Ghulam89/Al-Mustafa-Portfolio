@@ -2,25 +2,51 @@
 
 import Image from "next/image";
 import { AnimatePresence, motion } from "framer-motion";
-import { useMemo, useState, type CSSProperties } from "react";
+import { useEffect, useMemo, useState, type CSSProperties } from "react";
 import { FiExternalLink, FiGithub, FiX } from "react-icons/fi";
-import { projects } from "@/lib/portfolio-data";
+import type { Project } from "@/lib/portfolio-data";
 import { SectionShell } from "@/components/ui/section-shell";
 import { useSpotlight } from "@/hooks/use-spotlight";
 
+type LoadStatus = "loading" | "ready" | "error";
+
 export function ProjectsSection() {
+  const [projects, setProjects] = useState<Project[]>([]);
+  const [loadStatus, setLoadStatus] = useState<LoadStatus>("loading");
   const [selectedTag, setSelectedTag] = useState("All");
   const [activeProjectId, setActiveProjectId] = useState<string | null>(null);
+
+  useEffect(() => {
+    let cancelled = false;
+    fetch("/api/projects")
+      .then((res) => {
+        if (!res.ok) throw new Error("request failed");
+        return res.json();
+      })
+      .then((data) => {
+        if (cancelled) return;
+        setProjects(Array.isArray(data) ? (data as Project[]) : []);
+        setLoadStatus("ready");
+      })
+      .catch(() => {
+        if (cancelled) return;
+        setProjects([]);
+        setLoadStatus("error");
+      });
+    return () => {
+      cancelled = true;
+    };
+  }, []);
 
   const tags = useMemo(() => {
     const allTags = projects.flatMap((project) => project.tags);
     return ["All", ...Array.from(new Set(allTags))];
-  }, []);
+  }, [projects]);
 
   const filtered = useMemo(() => {
     if (selectedTag === "All") return projects;
     return projects.filter((project) => project.tags.includes(selectedTag));
-  }, [selectedTag]);
+  }, [selectedTag, projects]);
 
   const activeProject = projects.find((project) => project.id === activeProjectId) ?? null;
 
@@ -31,32 +57,60 @@ export function ProjectsSection() {
       title="Case studies built for outcomes, speed, and scale."
       description="Filter by technology and click any project for full context."
     >
-      <div className="mb-7 flex flex-wrap gap-2">
-        {tags.map((tag) => (
-          <button
-            key={tag}
-            type="button"
-            onClick={() => setSelectedTag(tag)}
-            className={`rounded-full px-4 py-2 text-xs font-semibold transition ${
-              selectedTag === tag
-                ? "bg-gradient-to-r from-blue-500 to-violet-500 text-white"
-                : "border border-white/20 bg-white/5 text-slate-200 hover:border-white/40"
-            }`}
-          >
-            {tag}
-          </button>
-        ))}
-      </div>
-      <div className="grid gap-6 lg:grid-cols-3">
-        {filtered.map((project, index) => (
-          <ProjectCard
-            key={project.id}
-            project={project}
-            onDetails={() => setActiveProjectId(project.id)}
-            className={index === 0 ? "lg:col-span-2" : ""}
-          />
-        ))}
-      </div>
+      {loadStatus === "loading" ? (
+        <div className="grid gap-6 lg:grid-cols-3" aria-busy="true" aria-label="Loading projects">
+          {[0, 1, 2].map((i) => (
+            <div
+              key={i}
+              className={`animate-pulse overflow-hidden rounded-2xl border border-white/10 bg-white/[0.04] ${i === 0 ? "lg:col-span-2" : ""}`}
+            >
+              <div className="h-52 bg-white/10" />
+              <div className="space-y-3 p-5">
+                <div className="h-5 w-2/3 rounded bg-white/10" />
+                <div className="h-3 w-full rounded bg-white/5" />
+                <div className="h-3 w-4/5 rounded bg-white/5" />
+              </div>
+            </div>
+          ))}
+        </div>
+      ) : loadStatus === "error" ? (
+        <p className="rounded-2xl border border-rose-500/30 bg-rose-500/5 px-5 py-6 text-sm text-rose-200/90">
+          Projects could not be loaded. Refresh the page or try again later.
+        </p>
+      ) : projects.length === 0 ? (
+        <p className="rounded-2xl border border-white/10 bg-white/[0.03] px-5 py-6 text-sm text-slate-400">
+          No projects to show yet.
+        </p>
+      ) : (
+        <>
+          <div className="mb-7 flex flex-wrap gap-2">
+            {tags.map((tag) => (
+              <button
+                key={tag}
+                type="button"
+                onClick={() => setSelectedTag(tag)}
+                className={`rounded-full px-4 py-2 text-xs font-semibold transition ${
+                  selectedTag === tag
+                    ? "bg-gradient-to-r from-blue-500 to-violet-500 text-white"
+                    : "border border-white/20 bg-white/5 text-slate-200 hover:border-white/40"
+                }`}
+              >
+                {tag}
+              </button>
+            ))}
+          </div>
+          <div className="grid gap-6 lg:grid-cols-3">
+            {filtered.map((project, index) => (
+              <ProjectCard
+                key={project.id}
+                project={project}
+                onDetails={() => setActiveProjectId(project.id)}
+                className={index === 0 ? "lg:col-span-2" : ""}
+              />
+            ))}
+          </div>
+        </>
+      )}
 
       <AnimatePresence>
         {activeProject ? (
@@ -102,7 +156,7 @@ function ProjectCard({
   onDetails,
   className,
 }: {
-  project: (typeof projects)[number];
+  project: Project;
   onDetails: () => void;
   className?: string;
 }) {
