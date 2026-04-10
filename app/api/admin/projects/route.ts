@@ -5,6 +5,7 @@ import { ADMIN_COOKIE, verifyAdminToken } from "@/lib/admin-auth";
 import type { Project } from "@/lib/portfolio-data";
 import { projects as defaultProjects } from "@/lib/portfolio-data";
 import {
+  ProjectsPersistenceError,
   readUserProjects,
   slugifyId,
   writeUserProjects,
@@ -79,7 +80,15 @@ export async function POST(request: Request) {
   };
 
   list.push(project);
-  await writeUserProjects(list);
+  try {
+    await writeUserProjects(list);
+  } catch (e) {
+    if (e instanceof ProjectsPersistenceError) {
+      return NextResponse.json({ error: e.message }, { status: 503 });
+    }
+    console.error("[admin/projects] POST write failed", e);
+    return NextResponse.json({ error: "Failed to save projects." }, { status: 500 });
+  }
 
   return NextResponse.json(project, { status: 201 });
 }
@@ -105,6 +114,14 @@ export async function DELETE(request: Request) {
     return NextResponse.json({ error: "Project not found" }, { status: 404 });
   }
 
-  await writeUserProjects(next);
+  try {
+    await writeUserProjects(next);
+  } catch (e) {
+    if (e instanceof ProjectsPersistenceError) {
+      return NextResponse.json({ error: e.message }, { status: 503 });
+    }
+    console.error("[admin/projects] DELETE write failed", e);
+    return NextResponse.json({ error: "Failed to save projects." }, { status: 500 });
+  }
   return NextResponse.json({ ok: true });
 }

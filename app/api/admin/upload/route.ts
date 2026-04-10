@@ -8,7 +8,8 @@ import { NextResponse } from "next/server";
 
 import { ADMIN_COOKIE, verifyAdminToken } from "@/lib/admin-auth";
 
-const MAX_BYTES = 5 * 1024 * 1024;
+/** Vercel server uploads are limited (~4.5MB body); stay under to avoid failed requests. */
+const MAX_BYTES = 4 * 1024 * 1024;
 const ALLOWED = new Map([
   ["image/jpeg", ".jpg"],
   ["image/png", ".png"],
@@ -40,7 +41,7 @@ export async function POST(request: Request) {
   }
 
   if (file.size > MAX_BYTES) {
-    return NextResponse.json({ error: "File too large (max 5MB)" }, { status: 400 });
+    return NextResponse.json({ error: "File too large (max 4MB on this host)" }, { status: 400 });
   }
 
   const ext = ALLOWED.get(file.type);
@@ -51,26 +52,46 @@ export async function POST(request: Request) {
   const buf = Buffer.from(await file.arrayBuffer());
   const name = `${randomUUID()}${ext}`;
 
-  /** Vercel serverless has no persistent disk — use Blob when token is set (auto on Vercel if Blob is enabled). */
-  const blobToken = process.env.BLOB_READ_WRITE_TOKEN?.trim();
-  if (blobToken) {
+  /** Vercel serverless has no persistent disk — use Blob when token is set (link Blob store in Vercel dashboard). */
+  const token = process.env.BLOB_READ_WRITE_TOKEN?.trim();
+  if (token) {
     try {
       const blob = await put(`portfolio-projects/${name}`, buf, {
         access: "public",
-        token: blobToken,
+        token,
         contentType: file.type,
       });
       return NextResponse.json({ url: blob.url });
     } catch (e) {
       console.error("[admin/upload] blob put failed", e);
-      return NextResponse.json({ error: "Cloud upload failed. Check Blob storage setup." }, { status: 502 });
+      return NextResponse.json(
+        {
+          error:
+            "Blob upload failed. In Vercel: Storage → Blob → link store to this project so BLOB_READ_WRITE_TOKEN is set.",
+        },
+        { status: 502 },
+      );
     }
   }
 
-  const dir = path.join(process.cwd(), "public", "uploads", "projects");
-  await mkdir(dir, { recursive: true });
-  const rel = `/uploads/projects/${name}`;
-  await writeFile(path.join(dir, name), buf);
+  if (process.env.VERCEL) {
+    return NextResponse.json(
+      {
+        error:
+          "Uploads on Vercel need Vercel Blob. Add Storage → Blob for this project (sets BLOB_READ_WRITE_TOKEN).",
+      },
+      { status: 503 },
+    );
+  }
 
-  return NextResponse.json({ url: rel });
+  try {
+    const dir = path.join(process.cwd(), "public", "uploads", "projects");
+    await mkdir(dir, { recursive: true });
+    const rel = `/uploads/projects/${name}`;
+    await writeFile(path.join(dir, name), buf);
+    return NextResponse.json({ url: rel });
+  } catch (e) {
+    console.error("[admin/upload] local write failed", e);
+    return NextResponse.json({ error: "Could not save file on disk." }, { status: 500 });
+  }
 }
