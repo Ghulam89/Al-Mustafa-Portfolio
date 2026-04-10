@@ -177,12 +177,23 @@ function ProjectCard({
     >
       <div className="pointer-events-none absolute inset-0 bg-[radial-gradient(circle_at_var(--spot-x)_var(--spot-y),rgba(99,102,241,0.22),transparent_44%)] opacity-0 transition duration-300 group-hover:opacity-100" />
       <div className="relative h-52">
-        <Image
-          src={project.image}
-          alt={project.title}
-          fill
-          className="object-cover transition group-hover:scale-105"
-        />
+        {/^https?:\/\//i.test(project.image) ? (
+          // eslint-disable-next-line @next/next/no-img-element -- remote uploads (e.g. Vercel Blob) must not depend on optimizer allowlist
+          <img
+            src={project.image}
+            alt={project.title}
+            className="absolute inset-0 h-full w-full object-cover transition group-hover:scale-105"
+            loading="lazy"
+            decoding="async"
+          />
+        ) : (
+          <Image
+            src={project.image}
+            alt={project.title}
+            fill
+            className="object-cover transition group-hover:scale-105"
+          />
+        )}
       </div>
       <div className="p-5">
         <h3 className="text-lg font-semibold text-white">{project.title}</h3>

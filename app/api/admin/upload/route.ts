@@ -2,6 +2,7 @@ import { mkdir, writeFile } from "node:fs/promises";
 import path from "node:path";
 import { randomUUID } from "node:crypto";
 
+import { put } from "@vercel/blob";
 import { cookies } from "next/headers";
 import { NextResponse } from "next/server";
 
@@ -48,9 +49,26 @@ export async function POST(request: Request) {
   }
 
   const buf = Buffer.from(await file.arrayBuffer());
+  const name = `${randomUUID()}${ext}`;
+
+  /** Vercel serverless has no persistent disk — use Blob when token is set (auto on Vercel if Blob is enabled). */
+  const blobToken = process.env.BLOB_READ_WRITE_TOKEN?.trim();
+  if (blobToken) {
+    try {
+      const blob = await put(`portfolio-projects/${name}`, buf, {
+        access: "public",
+        token: blobToken,
+        contentType: file.type,
+      });
+      return NextResponse.json({ url: blob.url });
+    } catch (e) {
+      console.error("[admin/upload] blob put failed", e);
+      return NextResponse.json({ error: "Cloud upload failed. Check Blob storage setup." }, { status: 502 });
+    }
+  }
+
   const dir = path.join(process.cwd(), "public", "uploads", "projects");
   await mkdir(dir, { recursive: true });
-  const name = `${randomUUID()}${ext}`;
   const rel = `/uploads/projects/${name}`;
   await writeFile(path.join(dir, name), buf);
 

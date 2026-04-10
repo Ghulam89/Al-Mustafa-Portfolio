@@ -7,6 +7,12 @@ const nextConfig: NextConfig = {
         protocol: "https",
         hostname: "images.unsplash.com",
       },
+      /** Vercel Blob (`*.public.blob.vercel-storage.com`) — needed if you use `next/image` for those URLs */
+      {
+        protocol: "https",
+        hostname: "*.public.blob.vercel-storage.com",
+        pathname: "/**",
+      },
     ],
     /**
      * Next 16 defaults to `localPatterns: [{ pathname: "**", search: "" }]` — no query strings.

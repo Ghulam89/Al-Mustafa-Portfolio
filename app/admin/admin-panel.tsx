@@ -248,9 +248,12 @@ export function AdminPanel() {
         </div>
 
         <p className="mt-2 text-sm text-slate-500">
-          New projects are saved on this machine in{" "}
-          <code className="rounded bg-white/10 px-1">data/user-projects.json</code>. Images go to{" "}
-          <code className="rounded bg-white/10 px-1">public/uploads/projects/</code>.
+          Local dev: projects in{" "}
+          <code className="rounded bg-white/10 px-1">data/user-projects.json</code>, images in{" "}
+          <code className="rounded bg-white/10 px-1">public/uploads/projects/</code>. On{" "}
+          <strong className="text-slate-400">Vercel</strong>, turn on{" "}
+          <strong className="text-slate-400">Blob</strong> storage so image uploads get a public URL (
+          <code className="rounded bg-white/10 px-1">BLOB_READ_WRITE_TOKEN</code>).
         </p>
 
         <form onSubmit={handleAddProject} className="mt-10 space-y-5 rounded-2xl border border-white/10 bg-white/[0.03] p-6">
