@@ -109,6 +109,7 @@ export const typingSkills = [
   "Node.js & Express APIs",
   "MongoDB + SQL Systems",
   "AWS, Docker, CI/CD",
+  "React Native Android & IOS Applications",
 ];
 
 export const counters = [

@@ -121,7 +121,7 @@ export function HeroSection() {
               </div>
 
               {/* Portrait above frame, horizontally centered, wider than ring so sides can break past border */}
-              <figure className="pointer-events-none absolute bottom-0 left-1/2 z-20 w-[min(122%,26rem)] -translate-x-1/2 -top-8 sm:-top-11 sm:w-[min(128%,28rem)] md:-top-14">
+              <figure className="pointer-events-none absolute bottom-0 left-[45%] z-20 w-[min(122%,26rem)] -translate-x-1/2 -top-8 sm:-top-11 sm:w-[min(128%,28rem)] md:-top-14">
                 <Image
                   src={heroPortraitSrc}
                   alt="Ghulam Mustafa — Full Stack MERN Developer"
